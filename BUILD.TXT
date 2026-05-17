@@ -1,0 +1,284 @@
+MMRCC ISO BUILD NOTES
+=====================
+
+This file documents how the release ISO is assembled.  The repo now
+separates tracked build logic from large or pristine payload data:
+
+  VAULT   = pristine upstream game and utility source data
+  SOURCE  = versioned source data used to create a release
+  STAGING = compiled ISO-root trees ready for mastering
+  ISO     = finished ISO images
+
+ISO\, SOURCE\, STAGING\, and VAULT\ are intentionally ignored by Git.
+Keep the repeatable notes, scripts, and boot/menu logic in the tracked
+part of the repo.
+
+
+CURRENT ISO ROOT LAYOUT
+-----------------------
+
+Each staged disc should look like the final ISO root for that disc.  For
+Disc 1, the root normally contains:
+
+  CONFIG\
+  DRIVERS\
+  GAMES\
+  UTILITY\
+  1101.VER
+  DOS.ZIP
+  HISTORY.TXT
+  ROOT.ZIP
+  UPDATE.ZIP
+
+For multi-disc builds, the boot installer checks for disc marker files
+such as 1101.VER, 1102.VER, 1201.VER, or 1202.VER.  Keep the marker
+names in sync with boot\AUTOEXEC.BAT before building ISO images.
+
+
+REPO DIRECTORIES
+----------------
+
+boot\
+  Tracked source files for the boot floppy image.  These files are
+  written into dosboot[version].ima, then that image is attached to the
+  ISO with MagicISO.  The boot directory itself is not the ISO root
+  CONFIG directory.
+
+Scripts\
+  Helper scripts and examples for packaging or update logic.
+
+VAULT\
+  Ignored pristine upstream data.  Keep original game and utility source
+  folders here so they can be repacked without touching the curated
+  release source tree.  Example subtrees:
+
+    VAULT\GAMES\
+    VAULT\UTILITY\
+
+SOURCE\
+  Ignored versioned release source data.  This is the curated source
+  material used to build STAGING.  Keep one folder per release line:
+
+    SOURCE\1.1a\
+    SOURCE\1.2\
+
+  A typical SOURCE\[version]\ folder contains:
+
+    CONFIG\
+    DOS\
+    DRIVERS\
+    ROOT\
+    SNDDRV\
+    UPDATES\
+    UTILITY\
+
+  Copy or rebuild game and utility payloads from VAULT into SOURCE when
+  they are selected for a release.
+
+STAGING\
+  Ignored compiled mastering area.  This is where the ISO root trees are
+  assembled after ZIP files are built and release files are copied into
+  place.  Keep one folder per release and disc:
+
+    STAGING\1.2\Disc 01\
+    STAGING\1.2\Disc 02\
+
+  Files in STAGING should be ready to drag into MagicISO.  Do not treat
+  STAGING as source; rebuild it from SOURCE when in doubt.
+
+ISO\
+  Ignored final output directory for mastered ISO images.
+
+
+SOURCE TO STAGING FLOW
+----------------------
+
+1. Put pristine upstream material in VAULT.
+
+2. Curate release inputs under SOURCE\[version].
+
+   Use SOURCE for the versioned release recipe: selected drivers,
+   post-install config files, DOS runtime contents, root filesystem
+   contents, update payloads, utility payloads, and selected game ZIPs.
+
+3. Build ZIP payloads from SOURCE.
+
+   Paths inside the ZIP files matter because the installer uses PKUNZIP
+   with -d.  Build ZIPs so they extract correctly when pointed at C:\.
+
+4. Assemble STAGING\[version]\Disc 01 and Disc 02.
+
+   Each Disc folder should be an ISO root, including disc marker files.
+   For example, STAGING\1.2\Disc 01\1201.VER marks release 1.2 disc 1.
+
+5. Attach the boot image in MagicISO and master each staged disc.
+
+6. Save finished ISO files under ISO\.
+
+
+ZIP PAYLOADS
+------------
+
+DOS.ZIP
+  The DOS runtime payload.  This should create C:\DOS\... when extracted
+  to C:\.  Build it from SOURCE\[version]\DOS with DOS\ as the stored
+  path prefix.
+
+ROOT.ZIP
+  Files and directories that belong at the root of C:\ after install,
+  such as COMMAND.COM, IO.SYS, MSDOS.SYS, SNDDRV\, NWCLIENT\, and any
+  other non-DOS root payload.  Build it from SOURCE\[version]\ROOT
+  without storing SOURCE\ or ROOT\ as path prefixes.
+
+UPDATE.ZIP
+  Patch payload for the current release ISO.  The current installer
+  expects this exact name at the ISO root.  Until the installer supports
+  a list of update ZIPs, make UPDATE.ZIP cumulative from the previous
+  full release to the current patch release.
+
+GAMES\*.ZIP
+  Game install archives selected from VAULT and copied or rebuilt into
+  the staged ISO root GAMES\ directory.  Names must match
+  boot\AUTOEXEC.BAT.  If the script says CARS*.ZIP or CARM*.ZIP, verify
+  there is only one intended match on that disc.
+
+UTILITY\*.ZIP
+  Optional utility archives selected from VAULT and copied or rebuilt
+  into the staged ISO root UTILITY\ directory for optional install
+  sequences.
+
+
+BOOT IMAGE BUILD
+----------------
+
+1. Update boot\AUTOEXEC.BAT and boot\CONFIG.SYS for the release.
+2. Write the contents of boot\ into a floppy image named:
+
+     boot\dosboot[version].ima
+
+   Example:
+
+     boot\dosboot1.2.ima
+
+3. Confirm the image root contains AUTOEXEC.BAT, CONFIG.SYS, and the DOS
+   tools needed by the boot installer.
+4. In MagicISO, attach dosboot[version].ima as the boot image.
+5. Use floppy emulation for the boot image unless intentionally changing
+   the boot method.
+
+
+ISO BUILD CHECKLIST
+-------------------
+
+1. Choose the release version.
+
+   Examples:
+
+     Human release: 1.2
+     Patch release: 1.2a
+     Disc marker: 1201.VER for release 1.2 disc 1
+
+2. Update HISTORY.TXT.
+
+3. Update SOURCE\[version]\CONFIG\VER[version].
+
+   This marker is copied to C:\DOS and is how the installer knows what
+   is already installed.  If the release is 1.2a, prefer a marker such
+   as VER1.2A and update the installer checks to match.
+
+4. Build or refresh DOS.ZIP from SOURCE\[version]\DOS.
+
+5. Build or refresh ROOT.ZIP from SOURCE\[version]\ROOT.
+
+6. Build or refresh UPDATE.ZIP from SOURCE\[version]\UPDATES.
+
+   For the current installer, UPDATE.ZIP should be cumulative.  If 1.2b
+   follows 1.2a, the staged UPDATE.ZIP should bring an installed 1.2
+   system all the way to 1.2b.
+
+7. Rebuild STAGING\[version]\Disc 01 and Disc 02.
+
+   Copy CONFIG\, DRIVERS\, GAMES\, UTILITY\, HISTORY.TXT, DOS.ZIP,
+   ROOT.ZIP, UPDATE.ZIP, and the disc marker files into the matching
+   staged disc roots.
+
+8. Add the boot image in MagicISO.
+
+9. Save the mastered ISO files to ISO\.
+
+10. Before publishing, inspect boot\AUTOEXEC.BAT and verify:
+
+   - Every disc marker it checks exists on the matching staged disc.
+   - Every game ZIP path it references exists in GAMES\.
+   - Every utility ZIP path it references exists in UTILITY\.
+   - The version check matches the newest CONFIG\VER[version] file.
+   - UPDATE.ZIP is present if the update menu option can run.
+
+11. Boot-test in a VM before writing physical media.
+
+
+PATCH RELEASE MODEL
+-------------------
+
+The current update flow is simple: it checks for a version marker in
+C:\DOS, extracts X:\UPDATE.ZIP, then writes the new marker.  That works,
+but it means the ISO can only advertise one current update payload.
+
+Recommended convention for now:
+
+  - Keep each patch source in SOURCE\[version]\UPDATES\[patch].
+  - Rebuild staged UPDATE.ZIP as a cumulative patch.
+  - Add SOURCE\[version]\CONFIG\VER[patch-version].
+  - Change boot\AUTOEXEC.BAT to check for the newest marker.
+  - Keep any one-off deletes, renames, or config migrations in
+    boot\AUTOEXEC.BAT or a dedicated update batch file.
+  - Use the non-destructive append/check pattern in Scripts\update.bat
+    when touching AUTOEXEC.BAT or CONFIG.SYS.
+
+Example sequence:
+
+  Release 1.2:
+    SOURCE\1.2\CONFIG\VER1.2
+    staged UPDATE.ZIP patches older supported installs to 1.2
+
+  Patch 1.2a:
+    SOURCE\1.2\CONFIG\VER1.2A
+    SOURCE\1.2\UPDATES\1.2a\ contains the patch source
+    staged UPDATE.ZIP patches any supported 1.2 install to 1.2a
+
+  Patch 1.2b:
+    SOURCE\1.2\CONFIG\VER1.2B
+    SOURCE\1.2\UPDATES\1.2b\ contains the patch source
+    staged UPDATE.ZIP patches any supported 1.2 or 1.2a install to 1.2b
+
+Future improvement:
+
+  Add an ISO root UPDATES\ directory containing versioned patch ZIPs,
+  such as 12A.ZIP and 12B.ZIP, then teach the installer to apply them in
+  order based on C:\DOS\VER* markers.  That would avoid rebuilding a
+  cumulative UPDATE.ZIP every time, but it requires more batch logic and
+  careful testing on real DOS.
+
+
+RELEASE SANITY CHECKS
+---------------------
+
+Use these quick checks before cutting an ISO:
+
+  - STAGING\[version]\Disc 01 and Disc 02 match the intended ISO roots.
+  - MagicISO root matches the staged disc folder being mastered.
+  - Finished ISO files are saved under ISO\.
+  - ISO volume date/version is intentional.
+  - Boot image name matches the release.
+  - Disc marker files match boot\AUTOEXEC.BAT.
+  - HISTORY.TXT includes the release notes.
+  - SOURCE\[version]\CONFIG\AUTOEXEC.BAT and CONFIG.SYS are the intended
+    fresh install defaults.
+  - SOURCE\[version]\CONFIG\CONFIG.SAF is still valid for safe-mode
+    installs.
+  - UPDATE.ZIP does not replace user-edited config files unless that is
+    intentional and documented.
+  - A clean install works.
+  - An update from the previous release works.
+  - Running the update twice does not duplicate config lines.
+
