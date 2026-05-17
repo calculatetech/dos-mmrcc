@@ -1,0 +1,27 @@
+1.2		Replaced DOS/4GW with DOS/32A to support write combining in BUILD games
+		Added Shadow Warrior and Blood
+		Added AMIDIAG and NSSI
+		Removed PCI ESS drivers
+		
+1.1a	Updated OPL3-SAx driver
+		All install methods use safe mode drivers to fix unexpected reboot during install
+		
+1.1		Disabled vga write combining to fix Doom corruption
+		Un-melded Carmageddon and Splat Pack to fix multiplayer
+		Added Rise of the Triad and WarCraft II
+		Simplified NIC driver installation and loading
+		Added more NIC drivers
+		Replaced NE2000 driver
+		Updated 3C90X driver
+		Added Intel Configuration Utility
+		Added NICSCAN utility
+		Added DOSBENCH installer
+		Implemented upgrade from previous release logic
+		Added UDMA drivers and enabled by default
+		Replaced HIMEM/EMM386 with UMBPCI and JEMM386
+		Removed extra file from Descent2
+		Improved text formatting
+		Added safe install options
+		Added Pirate mode
+		
+1.0		Initial release

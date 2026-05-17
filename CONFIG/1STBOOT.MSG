@@ -1,0 +1,23 @@
+                    ***************************************
+                    *           Welcome to the            *
+                    *  Mid-Michigan Retro Computer Club   *
+                    *  LAN Party Edition of MS-DOS 7.10!  *
+                    ***************************************
+
+Now that DOS is installed and running, there are some details to attend to.
+
+Step 1: Install a sound driver
+
+ Sound drivers are located on Disc 1 of the DOS install bundle.
+
+ D:\DRIVERS\SOUND
+
+ Refer to the instructions (if any) in the folder relevant to your soundcard.
+
+Step 2: Configure IPX networking
+
+ Network drivers are located on Disc 1 of the DOS install bundle.
+
+ D:\DRIVERS\LAN
+
+ Refer to READ.ME in the LAN drivers folder for further instructions.

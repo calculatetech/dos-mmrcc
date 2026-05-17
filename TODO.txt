@@ -1,0 +1,10 @@
+dos/32a
+driver scripts
+preconfigured mouse settings
+doom mouse fixer
+quake -mem 32 (or less)
+descent -640x480
+carma -hires -nocutscenes
+netlogon
+game launch menu
+hot dir

@@ -1,0 +1,211 @@
+@echo off
+REM ------------------------------------------------------------
+REM DOS 7.1 Bootable CD Game Installer - Autoexec.bat
+REM Refactored with error handling and documentation
+REM ------------------------------------------------------------
+
+REM Set default configuration if not already set
+if "%config%"=="" set config=normal
+
+if %config%==safe goto safe
+
+REM Load CD-ROM driver once
+SHSUCDX /D:SHSU-CD,X /Q
+
+if %config%==normal goto normal
+
+REM Setup RAM drive for temporary files (1.44MB disk image)
+xmsdsk r: 1440 /y>nul
+set temp=r:\
+set tmp=r:\
+
+REM Jump to the specified configuration label
+goto %config%
+
+:clean
+:safein
+cls
+REM Display system requirements for running games
+echo.
+echo SYSTEM REQUIREMENTS
+echo.
+echo CPU:     Pentium II class (700+ MHz recommended)
+echo RAM:     32-64MB (WARNING: More or less may crash games!)
+echo Storage: 4GB or greater
+echo Video:   PCI or AGP with VESA 3.0 support
+echo Sound:   ISA sound card (PCI prohibited!)
+echo Network: ISA or PCI ethernet card with RJ45
+echo.
+echo Press CTRL+C to abort if requirements not met.
+echo.
+pause
+cls
+
+REM Confirm destructive operation (erases primary hard drive)
+choice "This operation erases all data on your primary hard drive! Continue "
+if errorlevel 2 goto exit
+
+REM Check state of install from partition label
+gdisk.exe 1|find.exe " PRI DOS"|find.exe "INSTALL">nul
+if not errorlevel 1 goto install
+
+gdisk.exe 1|find.exe " PRI DOS"|find.exe "MSDOS710">nul
+if not errorlevel 1 goto reinstall
+
+REM Delete all partitions and create a new primary partition
+GDISK 1 /DEL /ALL
+if errorlevel 1 echo ERROR: Failed to delete partitions & goto exit
+
+gdisk.exe 1 /cre /pri /for /q /v:INSTALL
+if errorlevel 1 echo ERROR: Failed to create partition & goto exit
+
+gdisk 1 /mbr
+if errorlevel 1 echo ERROR: Failed to update MBR & goto exit
+
+echo.
+echo Rebooting to apply changes. Select the same install option to continue...
+echo.
+pause
+restart
+
+:reinstall
+cls
+echo MS-DOS 7.10 already installed.
+choice "Overwrite existing installation? "
+if errorlevel 2 goto exit
+format c: /q /autotest
+label C:INSTALL
+
+:install
+cls
+echo Making disk bootable...
+sys C:
+if errorlevel 1 echo ERROR: Failed to make disk bootable & goto exit
+
+cls
+echo Installing DOS files from CD...
+pkunzip -d -e -o X:\DOS.zip C:\
+pkunzip -d -e -o X:\ROOT.zip C:\
+if errorlevel 1 echo ERROR: Failed to unzip DOS files & goto exit
+
+REM Copy CONFIG.SYS based on configuration
+if %config%==safein goto configsafe
+if not exist C:\AUTOEXEC.BAT copy X:\CONFIG\CONFIG.SYS C:\
+
+goto install2
+
+:configsafe
+if not exist C:\AUTOEXEC.BAT copy X:\CONFIG\CONFIG.SAF C:\CONFIG.SYS
+
+:install2
+REM Copy AUTOEXEC.BAT and tweaks
+if not exist C:\AUTOEXEC.BAT copy X:\CONFIG\AUTOEXEC.BAT C:\
+copy X:\CONFIG\TWEAKS.BAT C:\DOS
+copy X:\CONFIG\VER1.1 C:\DOS
+copy X:\CONFIG\1STBOOT.MSG C:\
+label C:MSDOS710
+goto games
+
+:update
+:games
+:safeup
+cls
+echo Preparing game installation on RAM drive...
+copy *.* R:\>nul
+subst A: R:\>nul
+
+REM Check for Disc 1 presence
+:disconecheck
+if not exist X:\1101.ver goto discone
+if %config%==update goto update2
+if %config%==safeup goto update2
+goto games2
+
+REM Release update logic to ensure consistent state
+:update2
+if exist C:\DOS\VER1.1 goto games2
+
+REM Backup existing AUTOEXEC.BAT and CONFIG.SYS
+cls
+echo.
+echo This release contains changes to AUTOEXEC.BAT and CONFIG.SYS.  Your originals
+echo will be renamed to AUTOEXEC.OLD and CONFIG.OLD. Any modifications will need to
+echo be copied to the new file.
+echo.
+pause
+if exist C:\AUTOEXEC.OLD del C:\AUTOEXEC.OLD
+ren C:\AUTOEXEC.BAT AUTOEXEC.OLD
+if exist C:\CONFIG.OLD del C:\CONFIG.OLD
+ren C:\CONFIG.SYS CONFIG.OLD
+if %config%==update copy X:\CONFIG\CONFIG.SYS C:\
+if %config%==safeup copy X:\CONFIG\CONFIG.SAF C:\CONFIG.SYS
+copy X:\CONFIG\AUTOEXEC.BAT C:\
+pkunzip -d -e -o X:\UPDATE.zip C:\
+if exist C:\DOS\UIDEJR.SYS del C:\DOS\UIDEJR.SYS
+if not exist C:\DOS\TWEAKS.BAT copy X:\CONFIG\TWEAKS.BAT C:\DOS
+copy /y X:\CONFIG\VER1.1 C:\DOS
+
+:games2
+cls
+echo.
+echo GAME INSTALLATION
+echo.
+echo This installer checks for and skips any games already installed.
+echo Delete a game directory and perform an update to repair it.
+echo.
+pause
+REM Install games if not already present
+if not exist C:\BIGRED\RACING.EXE pkunzip -d -e -o X:\GAMES\BIGRED.ZIP C:\
+if exist C:\CARSPLAT\DATA\DEMOFILE.TXT deltree /y C:\CARSPLAT
+if not exist C:\CARSPLAT\CARMA.EXE pkunzip -d -e -o X:\GAMES\CARS*.ZIP C:\
+if not exist C:\DESCENT\DESCENTR.EXE pkunzip -d -e -o X:\GAMES\DESCENT.ZIP C:\
+if not exist C:\DESCENT2\DESCENT2.EXE pkunzip -d -e -o X:\GAMES\DESCENT2.ZIP C:\
+if not exist C:\DOOM2\DOOM2.EXE pkunzip -d -e -o X:\GAMES\DOOM2.ZIP C:\
+if not exist C:\DOOM_SE\DOOM.EXE pkunzip -d -e -o X:\GAMES\DOOM_SE.ZIP C:\
+if not exist C:\HERETIC\HERETIC.EXE pkunzip -d -e -o X:\GAMES\HERETIC.ZIP C:\
+if not exist C:\HEXEN\HEXEN.EXE pkunzip -d -e -o X:\GAMES\HEXEN.ZIP C:\
+if not exist C:\HEXENDK\HEXENDK.EXE pkunzip -d -e -o X:\GAMES\HEXENDK.ZIP C:\
+if not exist C:\PLUTONIA\DOOM2.EXE pkunzip -d -e -o X:\GAMES\PLUTONIA.ZIP C:\
+if not exist C:\QUAKE\QUAKE.EXE pkunzip -d -e -o X:\GAMES\QUAKE.ZIP C:\
+if not exist C:\RALLY\RALLY.EXE pkunzip -d -e -o X:\GAMES\RALLY.ZIP C:\
+if not exist C:\REDNECK\RR.EXE pkunzip -d -e -o X:\GAMES\REDNECK.ZIP C:\
+if not exist C:\ROTT\ROTT.EXE pkunzip -d -e -o X:\GAMES\ROTT.ZIP C:\
+if not exist C:\TNT\DOOM2.EXE pkunzip -d -e -o X:\GAMES\TNT.ZIP C:\
+if not exist C:\TV\TV.EXE pkunzip -d -e -o X:\GAMES\TV.ZIP C:\
+goto disctwo
+
+:discone
+cls
+echo.
+echo Please insert Disc 1
+echo.
+pause
+if not exist X:\1101.ver goto discone
+goto disconecheck
+
+:disctwo
+cls
+echo.
+echo Please insert Disc 2
+echo.
+pause
+if not exist X:\1102.ver goto disctwo
+REM Install remaining games from Disc 2
+if not exist C:\CARMA\MAINPROG.EXE pkunzip -d -e -o X:\GAMES\CARM*.ZIP C:\
+if not exist C:\DUKE3D\DUKE3D.EXE pkunzip -d -e -o X:\GAMES\DUKE3D.ZIP C:\
+if not exist C:\RIDES\RA.EXE pkunzip -d -e -o X:\GAMES\RIDES.ZIP C:\
+if not exist C:\S2\STARTL.EXE pkunzip -d -e -o X:\GAMES\S2.ZIP C:\
+if not exist C:\SR\STARTL.EXE pkunzip -d -e -o X:\GAMES\SR.ZIP C:\
+if not exist C:\WAR2\WAR2.EXE pkunzip -d -e -o X:\GAMES\WAR2.ZIP C:\
+cls
+echo.
+echo Install complete! Remove CD and reboot.
+echo.
+goto exit
+
+:normal
+REM Normal boot configuration
+:safe
+REM Safe mode configuration
+:exit
+REM End of script

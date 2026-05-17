@@ -1,0 +1,51 @@
+[menu]
+menuitem=clean, Format and Install DOS 7.1 MMRCC Edition Release 1.1 (2GB Required)
+menuitem=update, Update installed release to version 1.1
+menuitem=safein, Format and Install DOS 7.1 MMRCC Edition Release 1.1 (SAFE MODE)
+menuitem=safeup, Update installed release to version 1.1 (SAFE MODE)
+menuitem=games, I'm only here to pirate games!
+menuitem=normal, Command prompt with CD-ROM support
+menuitem=safe, Safe Mode (Command prompt only)
+menudefault=clean ,15
+
+[clean]
+include=default
+include=safecd
+
+[update]
+include=default
+include=safecd
+
+[safein]
+include=default
+include=safecd
+
+[safeup]
+include=default
+include=safecd
+
+[games]
+include=default
+include=safecd
+
+[normal]
+include=default
+include=safecd
+
+[udma]
+DEVICE=XHDD.SYS /H
+DEVICE=XDVD2.SYS /D:SHSU-CD /H
+
+[safecd]
+DEVICE=VIDE-CDD.SYS /D:SHSU-CD
+
+[default]
+DOS=HIGH,UMB
+DEVICE=HIMEM.SYS
+FILES=40
+STACKS=9,256
+LASTDRIVE=26
+
+[safe]
+
+[common]
